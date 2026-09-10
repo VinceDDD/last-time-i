@@ -71,4 +71,37 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Nothing here yet.'), findsNothing);
   });
+
+  testWidgets('tapping MARK DONE TODAY resets the label to Today',
+      (WidgetTester tester) async {
+    final repo = TaskRepository(database: testDb);
+    await tester.runAsync(() async {
+      await repo.insertTask(
+        TaskItem(
+          name: 'Clean bathroom',
+          lastCompletedAt: DateTime.now().subtract(const Duration(days: 8)),
+        ),
+      );
+    });
+
+    await pumpHome(tester);
+    expect(find.text('8 days ago'), findsOneWidget);
+
+    await tester.tap(find.text('MARK DONE TODAY'));
+    // Phase 1: let the real database write complete.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    // Phase 2: flush the continuation so the screen starts its reload read.
+    await tester.pump();
+    // Phase 3: let that reload read complete too.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    // Phase 4: rebuild with the fresh data (spinner is gone, settles now).
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('8 days ago'), findsNothing);
+  });
 }
