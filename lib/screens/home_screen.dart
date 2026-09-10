@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
+import '../services/task_service.dart';
 import '../widgets/task_card.dart';
 import 'add_task_screen.dart';
 
@@ -19,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late final TaskRepository _repository =
       widget.repository ?? TaskRepository();
+  late final TaskService _service = TaskService(repository: _repository);
 
   /// The future that loads the task list; replaced on every reload.
   late Future<List<TaskItem>> _tasksFuture;
@@ -44,6 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _reload();
   }
 
+  /// Marks the task as done today, then refreshes the list.
+  Future<void> _markDoneToday(TaskItem task) async {
+    await _service.markDoneToday(task);
+    _reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,7 +73,10 @@ class _HomeScreenState extends State<HomeScreen> {
           }
           return ListView.builder(
             itemCount: tasks.length,
-            itemBuilder: (context, index) => TaskCard(task: tasks[index]),
+            itemBuilder: (context, index) => TaskCard(
+              task: tasks[index],
+              onMarkDoneToday: () => _markDoneToday(tasks[index]),
+            ),
           );
         },
       ),
