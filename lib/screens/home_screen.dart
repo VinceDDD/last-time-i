@@ -5,6 +5,7 @@ import '../repositories/task_repository.dart';
 import '../services/task_service.dart';
 import '../widgets/task_card.dart';
 import 'add_task_screen.dart';
+import 'edit_task_screen.dart';
 
 /// Home screen: shows all tasks with how long ago each was completed.
 class HomeScreen extends StatefulWidget {
@@ -46,6 +47,16 @@ class _HomeScreenState extends State<HomeScreen> {
     _reload();
   }
 
+  /// Opens the edit screen, then refreshes the list on return.
+  Future<void> _openEditScreen(TaskItem task) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EditTaskScreen(task: task, repository: _repository),
+      ),
+    );
+    _reload();
+  }
+
   /// Marks the task as done today, then refreshes the list.
   Future<void> _markDoneToday(TaskItem task) async {
     await _service.markDoneToday(task);
@@ -76,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) => TaskCard(
               task: tasks[index],
               onMarkDoneToday: () => _markDoneToday(tasks[index]),
+              onTap: () => _openEditScreen(tasks[index]),
             ),
           );
         },

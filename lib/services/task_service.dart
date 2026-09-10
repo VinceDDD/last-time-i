@@ -22,4 +22,15 @@ class TaskService {
     await _repository.updateTask(updated);
     return updated;
   }
+
+  /// Saves changes (rename, new date) for [task] and persists them.
+  Future<TaskItem> updateTask(TaskItem task) async {
+    await _repository.updateTask(task);
+    return task;
+  }
+
+  /// Permanently removes the task with the given [id].
+  Future<void> deleteTask(int id) async {
+    await _repository.deleteTask(id);
+  }
 }
