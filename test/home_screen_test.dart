@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -6,6 +8,26 @@ import 'package:last_time_i/database/app_database.dart';
 import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 import 'package:last_time_i/screens/home_screen.dart';
+
+/// A repository whose getAllTasks never completes, so the home screen
+/// stays in its loading state.
+class _PendingRepository extends TaskRepository {
+  _PendingRepository(AppDatabase db) : super(database: db);
+
+  @override
+  Future<List<TaskItem>> getAllTasks() => Completer<List<TaskItem>>().future;
+}
+
+/// A repository whose getAllTasks always fails, so the home screen
+/// shows its error state.
+class _ThrowingRepository extends TaskRepository {
+  _ThrowingRepository(AppDatabase db) : super(database: db);
+
+  @override
+  Future<List<TaskItem>> getAllTasks() async {
+    throw Exception('database exploded');
+  }
+}
 
 void main() {
   late AppDatabase testDb;
@@ -103,5 +125,47 @@ void main() {
 
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('8 days ago'), findsNothing);
+  });
+
+  testWidgets('shows a loading indicator while the list loads',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(repository: _PendingRepository(testDb)),
+      ),
+    );
+    // No runAsync or pumpAndSettle here: the future never completes, so the
+    // spinner stays on screen — that is exactly what we are asserting.
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('shows an error message when loading fails',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(repository: _ThrowingRepository(testDb)),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Something went wrong'), findsOneWidget);
+  });
+
+  testWidgets('renders a very long task name without crashing',
+      (WidgetTester tester) async {
+    final longName = 'x' * 150;
+    final repo = TaskRepository(database: testDb);
+    await tester.runAsync(() async {
+      await repo.insertTask(
+        TaskItem(name: longName, lastCompletedAt: DateTime.now()),
+      );
+    });
+
+    await pumpHome(tester);
+
+    expect(find.text(longName), findsOneWidget);
   });
 }
