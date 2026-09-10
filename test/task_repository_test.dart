@@ -6,26 +6,31 @@ import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 
 void main() {
+  late AppDatabase testDb;
+
   setUpAll(() {
     // Use the desktop (FFI) SQLite implementation so tests can run on the
     // host machine, exactly like the real database on an Android phone.
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
+    // A dedicated database file: parallel test files each use their own.
+    testDb = AppDatabase.forTest('task_repository_test.db');
   });
 
   setUp(() async {
     // Start every test with an empty table.
-    final db = await AppDatabase.instance.database;
+    final db = await testDb.database;
     await db.delete('tasks');
   });
 
   tearDown(() async {
     // Close the connection so the next test opens a fresh one.
-    await AppDatabase.instance.close();
+    await testDb.close();
   });
 
-  test('insert returns the task with an id and it reads back correctly', () async {
-    final repo = TaskRepository();
+  test('insert returns the task with an id and it reads back correctly',
+      () async {
+    final repo = TaskRepository(database: testDb);
 
     final created = await repo.insertTask(
       TaskItem(
@@ -44,7 +49,7 @@ void main() {
   });
 
   test('update persists changes to an existing task', () async {
-    final repo = TaskRepository();
+    final repo = TaskRepository(database: testDb);
     final created = await repo.insertTask(
       TaskItem(
         name: 'Change air filter',
@@ -61,7 +66,7 @@ void main() {
   });
 
   test('delete removes the task', () async {
-    final repo = TaskRepository();
+    final repo = TaskRepository(database: testDb);
     final created = await repo.insertTask(
       TaskItem(
         name: 'Clean bathroom',
@@ -75,8 +80,9 @@ void main() {
     expect(all, isEmpty);
   });
 
-  test('data persists after the database is closed and reopened (restart)', () async {
-    final repo = TaskRepository();
+  test('data persists after the database is closed and reopened (restart)',
+      () async {
+    final repo = TaskRepository(database: testDb);
     await repo.insertTask(
       TaskItem(
         name: 'Call Mum',
@@ -85,9 +91,9 @@ void main() {
     );
 
     // Simulate an app restart: close the connection, then read again.
-    await AppDatabase.instance.close();
+    await testDb.close();
 
-    final repoAfterRestart = TaskRepository();
+    final repoAfterRestart = TaskRepository(database: testDb);
     final all = await repoAfterRestart.getAllTasks();
     expect(all.length, 1);
     expect(all.first.name, 'Call Mum');

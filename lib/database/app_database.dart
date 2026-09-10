@@ -4,15 +4,20 @@ import 'package:sqflite/sqflite.dart';
 /// Owns the SQLite database: opens the file, defines the schema,
 /// and hands out the [Database] instance to the repository layer.
 ///
-/// Only one AppDatabase object should ever exist, so this class uses
-/// the singleton pattern: [AppDatabase.instance] is the one and only.
+/// Only one AppDatabase object should normally exist, so the app uses
+/// the singleton [AppDatabase.instance].
 class AppDatabase {
-  AppDatabase._();
+  AppDatabase._({String? dbName}) : _dbName = dbName ?? 'last_time_i.db';
 
-  /// The single shared instance of the database owner.
+  /// The single shared instance used by the app.
   static final AppDatabase instance = AppDatabase._();
 
-  static const _dbName = 'last_time_i.db';
+  /// A separate instance for tests, so each test file uses its own
+  /// database file and parallel test files never lock each other out.
+  factory AppDatabase.forTest(String name) => AppDatabase._(dbName: name);
+
+  final String _dbName;
+
   static const _dbVersion = 1;
 
   /// The open database connection, or null before the first open.
