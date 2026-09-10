@@ -45,4 +45,44 @@ void main() {
     expect(all.length, 1);
     expect(formatDate(all.first.lastCompletedAt), formatDate(DateTime.now()));
   });
+
+  test('updateTask persists a rename and a new date', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+    final created = await repo.insertTask(
+      TaskItem(
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+      ),
+    );
+
+    final updated = await service.updateTask(
+      created.copyWith(
+        name: 'Change air filter + vent',
+        lastCompletedAt: DateTime(2026, 8, 1),
+      ),
+    );
+
+    expect(updated.name, 'Change air filter + vent');
+
+    final all = await repo.getAllTasks();
+    expect(all.length, 1);
+    expect(all.first.name, 'Change air filter + vent');
+    expect(all.first.lastCompletedAt, DateTime(2026, 8, 1));
+  });
+
+  test('deleteTask removes the task', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+    final created = await repo.insertTask(
+      TaskItem(
+        name: 'Clean bathroom',
+        lastCompletedAt: DateTime(2026, 8, 30),
+      ),
+    );
+
+    await service.deleteTask(created.id!);
+
+    expect(await repo.getAllTasks(), isEmpty);
+  });
 }
