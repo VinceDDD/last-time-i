@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../utils/date_formatter.dart';
+
 /// A single tracked task/activity, e.g. "Change air filter".
 ///
 /// This is a plain data object: it holds values and knows how to convert
@@ -52,9 +54,9 @@ class TaskItem {
     return {
       'id': id,
       'name': name,
-      'last_completed_at': _formatDate(lastCompletedAt),
-      'created_at': createdAt == null ? null : _formatDate(createdAt!),
-      'updated_at': updatedAt == null ? null : _formatDate(updatedAt!),
+      'last_completed_at': formatDate(lastCompletedAt),
+      'created_at': createdAt == null ? null : formatDate(createdAt!),
+      'updated_at': updatedAt == null ? null : formatDate(updatedAt!),
     };
   }
 
@@ -72,12 +74,4 @@ class TaskItem {
           : DateTime.parse(map['updated_at'] as String),
     );
   }
-}
-
-/// Formats [date] as "yyyy-MM-dd" (day precision), the format used in storage.
-String _formatDate(DateTime date) {
-  final y = date.year.toString().padLeft(4, '0');
-  final m = date.month.toString().padLeft(2, '0');
-  final d = date.day.toString().padLeft(2, '0');
-  return '$y-$m-$d';
 }

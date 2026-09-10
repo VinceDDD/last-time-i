@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'screens/add_task_screen.dart';
+
 void main() {
   runApp(const LastTimeIApp());
 }
@@ -20,8 +22,8 @@ class LastTimeIApp extends StatelessWidget {
   }
 }
 
-/// Stage 1 placeholder: the app only needs to launch and display
-/// "Last Time I...". Real screens come in later stages.
+/// Placeholder home: shows the app name and a button to add a task.
+/// The real task list arrives in Stage 4.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -36,6 +38,15 @@ class HomeScreen extends StatelessWidget {
           'Last Time I...',
           style: TextStyle(fontSize: 24),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AddTaskScreen()),
+          );
+        },
+        tooltip: 'Add Item',
+        child: const Icon(Icons.add),
       ),
     );
   }
