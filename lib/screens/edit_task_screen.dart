@@ -90,7 +90,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await _service.deleteTask(widget.task.id!);
+    final id = widget.task.id;
+    if (id == null) {
+      return; // the task was never saved, so there is nothing to delete
+    }
+    await _service.deleteTask(id);
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -111,12 +115,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 decoration: const InputDecoration(
                   labelText: 'What did you do?',
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name cannot be blank';
-                  }
-                  return null;
-                },
+                validator: TaskService.validateName,
               ),
               const SizedBox(height: 8),
               ListTile(

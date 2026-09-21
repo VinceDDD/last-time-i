@@ -18,7 +18,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final TaskRepository _repository = widget.repository ?? TaskRepository();
   late final TaskService _service = TaskService(repository: _repository);
 
@@ -28,7 +28,24 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Watch app lifecycle events so the list refreshes when the app
+    // returns to the foreground (e.g. after an overnight sleep).
+    WidgetsBinding.instance.addObserver(this);
     _tasksFuture = _repository.getAllTasks();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Called whenever the app moves between foreground and background.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _reload();
+    }
   }
 
   /// Re-reads the list from the database and rebuilds.
@@ -40,8 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Opens the add screen, then refreshes the list on return.
   Future<void> _openAddScreen() async {
-    await Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const AddTaskScreen()));
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => AddTaskScreen(repository: _repository)),
+    );
     _reload();
   }
 

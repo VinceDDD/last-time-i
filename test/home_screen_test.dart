@@ -168,4 +168,30 @@ void main() {
 
     expect(find.text(longName), findsOneWidget);
   });
+
+  testWidgets('reloads the list when the app resumes from the background', (
+    WidgetTester tester,
+  ) async {
+    final repo = TaskRepository(database: testDb);
+    await pumpHome(tester);
+    expect(find.text('Nothing here yet.'), findsOneWidget);
+
+    // Simulate the app going to the background, during which a task is added.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    await tester.runAsync(() async {
+      await repo.insertTask(
+        TaskItem(name: 'Added while paused', lastCompletedAt: DateTime.now()),
+      );
+    });
+
+    // Bring the app back to the foreground: the observer reloads the list.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Added while paused'), findsOneWidget);
+  });
 }

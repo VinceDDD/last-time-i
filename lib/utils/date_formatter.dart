@@ -16,11 +16,18 @@ String formatDate(DateTime date) {
 ///
 /// The calculation is deliberately date-only: time of day is ignored,
 /// so "last night at 11pm" and "this morning at 6am" both count as today.
-int daysAgo(DateTime date) {
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-  final thatDay = DateTime(date.year, date.month, date.day);
-  return today.difference(thatDay).inDays;
+///
+/// Both dates are normalised to UTC midnight before subtracting. Local
+/// midnights are 23 or 25 hours apart around daylight-saving transitions,
+/// which would make `difference().inDays` round one day short; UTC has no
+/// DST, so every UTC day is exactly 24 hours long.
+///
+/// [now] is injectable so tests can pin the "today" reference date.
+int daysAgo(DateTime date, {DateTime? now}) {
+  final reference = now ?? DateTime.now();
+  final todayUtc = DateTime.utc(reference.year, reference.month, reference.day);
+  final thatDayUtc = DateTime.utc(date.year, date.month, date.day);
+  return todayUtc.difference(thatDayUtc).inDays;
 }
 
 /// Human-friendly label: "Today", "1 day ago", "47 days ago".

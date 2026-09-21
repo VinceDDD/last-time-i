@@ -50,6 +50,22 @@ void main() {
     },
   );
 
+  test('insert stamps createdAt and updatedAt', () async {
+    final repo = TaskRepository(database: testDb);
+
+    final created = await repo.insertTask(
+      TaskItem(name: 'Water the plants', lastCompletedAt: DateTime(2026, 9, 1)),
+    );
+
+    // The timestamps documented in the data model are written, never NULL.
+    expect(created.createdAt, isNotNull);
+    expect(created.updatedAt, isNotNull);
+
+    final all = await repo.getAllTasks();
+    expect(all.first.createdAt, isNotNull);
+    expect(all.first.updatedAt, isNotNull);
+  });
+
   test('update persists changes to an existing task', () async {
     final repo = TaskRepository(database: testDb);
     final created = await repo.insertTask(

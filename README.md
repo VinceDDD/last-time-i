@@ -55,4 +55,25 @@ flutter test
 One feature per branch → code → `flutter analyze` + `flutter test` →
 pull request → review → merge into `main`.
 
-Branches used so far: `main` (stable) · `feature/project-foundation`.
+Branches: `main` (stable) — every feature lands via a pull request.
+
+## Troubleshooting
+
+### `flutter test` fails to load tests when a proxy is configured
+
+If `HTTP_PROXY`/`HTTPS_PROXY` is set, the test runner may fail with
+`WebSocketException: Invalid WebSocket upgrade request`. Exclude localhost:
+
+```
+set NO_PROXY=127.0.0.1,localhost
+```
+
+(PowerShell: `$env:NO_PROXY = "127.0.0.1,localhost"`)
+
+## Known limitations (v0.1.0)
+
+- Release APK is a single "fat" build (~47 MB, all CPU architectures).
+  `flutter build apk --split-per-abi` produces smaller per-device APKs.
+- Release builds are signed with the debug keystore; a proper signing key is
+  needed before publishing to an app store.
+- The SQLite schema has no migration path yet.
