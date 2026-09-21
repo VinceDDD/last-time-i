@@ -22,13 +22,13 @@ class EditTaskScreen extends StatefulWidget {
 
 class _EditTaskScreenState extends State<EditTaskScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TaskRepository _repository =
-      widget.repository ?? TaskRepository();
+  late final TaskRepository _repository = widget.repository ?? TaskRepository();
   late final TaskService _service = TaskService(repository: _repository);
 
   /// The name field, pre-filled with the current name.
-  late final TextEditingController _nameController =
-      TextEditingController(text: widget.task.name);
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.task.name,
+  );
 
   /// The selected date, starting from the current one.
   late DateTime _lastCompletedAt = widget.task.lastCompletedAt;
@@ -90,7 +90,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await _service.deleteTask(widget.task.id!);
+    final id = widget.task.id;
+    if (id == null) {
+      return; // the task was never saved, so there is nothing to delete
+    }
+    await _service.deleteTask(id);
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -111,12 +115,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 decoration: const InputDecoration(
                   labelText: 'What did you do?',
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name cannot be blank';
-                  }
-                  return null;
-                },
+                validator: TaskService.validateName,
               ),
               const SizedBox(height: 8),
               ListTile(
@@ -126,10 +125,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 onTap: _pickDate,
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _save,
-                child: const Text('SAVE'),
-              ),
+              FilledButton(onPressed: _save, child: const Text('SAVE')),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _delete,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'repositories/task_repository.dart';
 import 'screens/home_screen.dart';
 
 void main() {
@@ -8,7 +9,10 @@ void main() {
 
 /// Root widget of the application.
 class LastTimeIApp extends StatelessWidget {
-  const LastTimeIApp({super.key});
+  const LastTimeIApp({super.key, this.repository});
+
+  /// Allows tests to supply their own repository (and database).
+  final TaskRepository? repository;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +21,7 @@ class LastTimeIApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
       ),
-      home: const HomeScreen(),
+      home: HomeScreen(repository: repository),
     );
   }
 }

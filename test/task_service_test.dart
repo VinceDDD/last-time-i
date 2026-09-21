@@ -25,8 +25,7 @@ void main() {
     await testDb.close();
   });
 
-  test('markDoneToday sets lastCompletedAt to today and persists it',
-      () async {
+  test('markDoneToday sets lastCompletedAt to today and persists it', () async {
     final repo = TaskRepository(database: testDb);
     final service = TaskService(repository: repo);
     final created = await repo.insertTask(
@@ -75,14 +74,48 @@ void main() {
     final repo = TaskRepository(database: testDb);
     final service = TaskService(repository: repo);
     final created = await repo.insertTask(
-      TaskItem(
-        name: 'Clean bathroom',
-        lastCompletedAt: DateTime(2026, 8, 30),
-      ),
+      TaskItem(name: 'Clean bathroom', lastCompletedAt: DateTime(2026, 8, 30)),
     );
 
     await service.deleteTask(created.id!);
 
     expect(await repo.getAllTasks(), isEmpty);
+  });
+
+  test('addTask rejects a blank name and saves nothing', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+
+    expect(
+      () => service.addTask('   ', DateTime(2026, 9, 1)),
+      throwsArgumentError,
+    );
+    expect(await repo.getAllTasks(), isEmpty);
+  });
+
+  test('addTask rejects a future date and saves nothing', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+
+    expect(() => service.addTask('Plan ahead', tomorrow), throwsArgumentError);
+    expect(await repo.getAllTasks(), isEmpty);
+  });
+
+  test('addTask saves a valid task and returns it with an id', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+
+    final saved = await service.addTask(
+      'Change air filter',
+      DateTime(2026, 9, 1),
+    );
+
+    expect(saved.id, isNotNull);
+    expect(saved.name, 'Change air filter');
+
+    final all = await repo.getAllTasks();
+    expect(all.length, 1);
+    expect(all.first.name, 'Change air filter');
   });
 }

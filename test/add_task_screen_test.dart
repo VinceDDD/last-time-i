@@ -27,8 +27,9 @@ void main() {
     await testDb.close();
   });
 
-  testWidgets('shows a validation error when the name is blank',
-      (WidgetTester tester) async {
+  testWidgets('shows a validation error when the name is blank', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: AddTaskScreen(repository: TaskRepository(database: testDb)),
@@ -51,8 +52,9 @@ void main() {
     expect(find.text(formatDate(DateTime.now())), findsOneWidget);
   });
 
-  testWidgets('saves a valid task to the database and pops with it',
-      (WidgetTester tester) async {
+  testWidgets('saves a valid task to the database and pops with it', (
+    WidgetTester tester,
+  ) async {
     // Host screen that pushes AddTaskScreen and captures the popped result.
     TaskItem? popped;
     await tester.pumpWidget(

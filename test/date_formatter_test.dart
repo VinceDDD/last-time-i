@@ -45,6 +45,13 @@ void main() {
         lessThanOrEqualTo(0),
       );
     });
+
+    test('day after a DST transition still counts as 1 day', () {
+      // 2026-10-04 is the Sydney spring-forward date: that local day has
+      // only 23 hours. Comparing local midnights would report 0; UTC
+      // normalisation reports the correct 1.
+      expect(daysAgo(DateTime(2026, 10, 4), now: DateTime(2026, 10, 5)), 1);
+    });
   });
 
   group('daysAgoLabel', () {
@@ -74,10 +81,7 @@ void main() {
     });
 
     test('a future date (defensive) shows "Today"', () {
-      expect(
-        daysAgoLabel(today().add(const Duration(days: 1))),
-        'Today',
-      );
+      expect(daysAgoLabel(today().add(const Duration(days: 1))), 'Today');
     });
   });
 

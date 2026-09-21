@@ -77,7 +77,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('pre-fills the current name and date', (WidgetTester tester) async {
+  testWidgets('pre-fills the current name and date', (
+    WidgetTester tester,
+  ) async {
     TaskItem? task;
     await tester.runAsync(() async {
       task = await seedTask();
@@ -88,8 +90,9 @@ void main() {
     expect(find.text('2026-07-14'), findsOneWidget);
   });
 
-  testWidgets('saving a rename persists to the database',
-      (WidgetTester tester) async {
+  testWidgets('saving a rename persists to the database', (
+    WidgetTester tester,
+  ) async {
     TaskItem? task;
     await tester.runAsync(() async {
       task = await seedTask();
@@ -117,8 +120,9 @@ void main() {
     expect(all!.first.name, 'Change air filter + vent');
   });
 
-  testWidgets('cancel keeps the task, confirm deletes it',
-      (WidgetTester tester) async {
+  testWidgets('cancel keeps the task, confirm deletes it', (
+    WidgetTester tester,
+  ) async {
     TaskItem? task;
     await tester.runAsync(() async {
       task = await seedTask(name: 'Clean bathroom');
@@ -156,5 +160,27 @@ void main() {
       afterDelete = await TaskRepository(database: testDb).getAllTasks();
     });
     expect(afterDelete, isEmpty);
+  });
+
+  testWidgets('deleting a task that was never saved does not crash', (
+    WidgetTester tester,
+  ) async {
+    await pumpEdit(
+      tester,
+      TaskItem(name: 'Unsaved', lastCompletedAt: DateTime(2026, 7, 14)),
+    );
+
+    await tester.tap(find.text('DELETE'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('DELETE'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // No exception: the guard returns early and the screen stays open.
+    expect(find.text('Edit Item'), findsOneWidget);
   });
 }

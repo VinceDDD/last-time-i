@@ -39,11 +39,7 @@ class AppDatabase {
     final basePath = await getDatabasesPath();
     // Join the folder and file name using the correct separator.
     final path = p.join(basePath, _dbName);
-    return openDatabase(
-      path,
-      version: _dbVersion,
-      onCreate: _onCreate,
-    );
+    return openDatabase(path, version: _dbVersion, onCreate: _onCreate);
   }
 
   /// Runs once when the database file is first created.

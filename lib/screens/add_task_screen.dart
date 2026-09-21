@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
+import '../services/task_service.dart';
 import '../utils/date_formatter.dart';
 
 /// Screen for adding a new task: a name plus the date it was last completed.
@@ -19,8 +19,8 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  late final TaskRepository _repository =
-      widget.repository ?? TaskRepository();
+  late final TaskRepository _repository = widget.repository ?? TaskRepository();
+  late final TaskService _service = TaskService(repository: _repository);
 
   /// The selected date. Defaults to today; the picker forbids the future.
   DateTime _lastCompletedAt = DateTime.now();
@@ -46,16 +46,15 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     }
   }
 
-  /// Validates, saves to the database, and closes the screen.
+  /// Validates, saves through the service, and closes the screen.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return; // the form has already shown the error messages
     }
-    final task = TaskItem(
-      name: _nameController.text.trim(),
-      lastCompletedAt: _lastCompletedAt,
+    final saved = await _service.addTask(
+      _nameController.text,
+      _lastCompletedAt,
     );
-    final saved = await _repository.insertTask(task);
     if (!mounted) return; // screen may have closed while awaiting
     Navigator.of(context).pop(saved);
   }
@@ -77,12 +76,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   labelText: 'What did you do?',
                   hintText: 'e.g. Change air filter',
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Name cannot be blank';
-                  }
-                  return null;
-                },
+                validator: TaskService.validateName,
               ),
               const SizedBox(height: 8),
               ListTile(
@@ -92,10 +86,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 onTap: _pickDate,
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _save,
-                child: const Text('SAVE'),
-              ),
+              FilledButton(onPressed: _save, child: const Text('SAVE')),
             ],
           ),
         ),

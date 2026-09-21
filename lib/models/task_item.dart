@@ -74,4 +74,20 @@ class TaskItem {
           : DateTime.parse(map['updated_at'] as String),
     );
   }
+
+  /// Two tasks are equal when every field matches.
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is TaskItem &&
+            other.id == id &&
+            other.name == name &&
+            other.lastCompletedAt == lastCompletedAt &&
+            other.createdAt == createdAt &&
+            other.updatedAt == updatedAt;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, lastCompletedAt, createdAt, updatedAt);
 }
