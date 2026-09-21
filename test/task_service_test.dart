@@ -25,8 +25,7 @@ void main() {
     await testDb.close();
   });
 
-  test('markDoneToday sets lastCompletedAt to today and persists it',
-      () async {
+  test('markDoneToday sets lastCompletedAt to today and persists it', () async {
     final repo = TaskRepository(database: testDb);
     final service = TaskService(repository: repo);
     final created = await repo.insertTask(
@@ -75,10 +74,7 @@ void main() {
     final repo = TaskRepository(database: testDb);
     final service = TaskService(repository: repo);
     final created = await repo.insertTask(
-      TaskItem(
-        name: 'Clean bathroom',
-        lastCompletedAt: DateTime(2026, 8, 30),
-      ),
+      TaskItem(name: 'Clean bathroom', lastCompletedAt: DateTime(2026, 8, 30)),
     );
 
     await service.deleteTask(created.id!);

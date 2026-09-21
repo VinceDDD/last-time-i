@@ -74,10 +74,7 @@ void main() {
     });
 
     test('a future date (defensive) shows "Today"', () {
-      expect(
-        daysAgoLabel(today().add(const Duration(days: 1))),
-        'Today',
-      );
+      expect(daysAgoLabel(today().add(const Duration(days: 1))), 'Today');
     });
   });
 

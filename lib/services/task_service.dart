@@ -7,7 +7,7 @@ import '../repositories/task_repository.dart';
 /// rules like "mark done today" in one testable place.
 class TaskService {
   TaskService({TaskRepository? repository})
-      : _repository = repository ?? TaskRepository();
+    : _repository = repository ?? TaskRepository();
 
   final TaskRepository _repository;
 
@@ -16,9 +16,7 @@ class TaskService {
   /// Returns the updated copy (with `lastCompletedAt` = today) so the
   /// caller can use it without re-reading the database.
   Future<TaskItem> markDoneToday(TaskItem task) async {
-    final updated = task.copyWith(
-      lastCompletedAt: DateTime.now(),
-    );
+    final updated = task.copyWith(lastCompletedAt: DateTime.now());
     await _repository.updateTask(updated);
     return updated;
   }

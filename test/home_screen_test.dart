@@ -61,16 +61,18 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the empty state when there are no tasks',
-      (WidgetTester tester) async {
+  testWidgets('shows the empty state when there are no tasks', (
+    WidgetTester tester,
+  ) async {
     await pumpHome(tester);
 
     expect(find.text('Nothing here yet.'), findsOneWidget);
     expect(find.text('ADD ITEM'), findsOneWidget);
   });
 
-  testWidgets('lists tasks with their days-ago labels',
-      (WidgetTester tester) async {
+  testWidgets('lists tasks with their days-ago labels', (
+    WidgetTester tester,
+  ) async {
     final repo = TaskRepository(database: testDb);
     await tester.runAsync(() async {
       final now = DateTime.now();
@@ -80,9 +82,7 @@ void main() {
           lastCompletedAt: now.subtract(const Duration(days: 47)),
         ),
       );
-      await repo.insertTask(
-        TaskItem(name: 'Call Mum', lastCompletedAt: now),
-      );
+      await repo.insertTask(TaskItem(name: 'Call Mum', lastCompletedAt: now));
     });
 
     await pumpHome(tester);
@@ -94,8 +94,9 @@ void main() {
     expect(find.text('Nothing here yet.'), findsNothing);
   });
 
-  testWidgets('tapping MARK DONE TODAY resets the label to Today',
-      (WidgetTester tester) async {
+  testWidgets('tapping MARK DONE TODAY resets the label to Today', (
+    WidgetTester tester,
+  ) async {
     final repo = TaskRepository(database: testDb);
     await tester.runAsync(() async {
       await repo.insertTask(
@@ -127,24 +128,22 @@ void main() {
     expect(find.text('8 days ago'), findsNothing);
   });
 
-  testWidgets('shows a loading indicator while the list loads',
-      (WidgetTester tester) async {
+  testWidgets('shows a loading indicator while the list loads', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(repository: _PendingRepository(testDb)),
-      ),
+      MaterialApp(home: HomeScreen(repository: _PendingRepository(testDb))),
     );
     // No runAsync or pumpAndSettle here: the future never completes, so the
     // spinner stays on screen — that is exactly what we are asserting.
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('shows an error message when loading fails',
-      (WidgetTester tester) async {
+  testWidgets('shows an error message when loading fails', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: HomeScreen(repository: _ThrowingRepository(testDb)),
-      ),
+      MaterialApp(home: HomeScreen(repository: _ThrowingRepository(testDb))),
     );
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
@@ -154,8 +153,9 @@ void main() {
     expect(find.textContaining('Something went wrong'), findsOneWidget);
   });
 
-  testWidgets('renders a very long task name without crashing',
-      (WidgetTester tester) async {
+  testWidgets('renders a very long task name without crashing', (
+    WidgetTester tester,
+  ) async {
     final longName = 'x' * 150;
     final repo = TaskRepository(database: testDb);
     await tester.runAsync(() async {

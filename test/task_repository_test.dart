@@ -28,25 +28,27 @@ void main() {
     await testDb.close();
   });
 
-  test('insert returns the task with an id and it reads back correctly',
-      () async {
-    final repo = TaskRepository(database: testDb);
+  test(
+    'insert returns the task with an id and it reads back correctly',
+    () async {
+      final repo = TaskRepository(database: testDb);
 
-    final created = await repo.insertTask(
-      TaskItem(
-        name: 'Change air filter',
-        lastCompletedAt: DateTime(2026, 7, 14),
-      ),
-    );
+      final created = await repo.insertTask(
+        TaskItem(
+          name: 'Change air filter',
+          lastCompletedAt: DateTime(2026, 7, 14),
+        ),
+      );
 
-    expect(created.id, isNotNull);
+      expect(created.id, isNotNull);
 
-    final all = await repo.getAllTasks();
-    expect(all.length, 1);
-    expect(all.first.id, created.id);
-    expect(all.first.name, 'Change air filter');
-    expect(all.first.lastCompletedAt, DateTime(2026, 7, 14));
-  });
+      final all = await repo.getAllTasks();
+      expect(all.length, 1);
+      expect(all.first.id, created.id);
+      expect(all.first.name, 'Change air filter');
+      expect(all.first.lastCompletedAt, DateTime(2026, 7, 14));
+    },
+  );
 
   test('update persists changes to an existing task', () async {
     final repo = TaskRepository(database: testDb);
@@ -68,10 +70,7 @@ void main() {
   test('delete removes the task', () async {
     final repo = TaskRepository(database: testDb);
     final created = await repo.insertTask(
-      TaskItem(
-        name: 'Clean bathroom',
-        lastCompletedAt: DateTime(2026, 8, 30),
-      ),
+      TaskItem(name: 'Clean bathroom', lastCompletedAt: DateTime(2026, 8, 30)),
     );
 
     await repo.deleteTask(created.id!);
@@ -80,22 +79,21 @@ void main() {
     expect(all, isEmpty);
   });
 
-  test('data persists after the database is closed and reopened (restart)',
-      () async {
-    final repo = TaskRepository(database: testDb);
-    await repo.insertTask(
-      TaskItem(
-        name: 'Call Mum',
-        lastCompletedAt: DateTime(2026, 9, 6),
-      ),
-    );
+  test(
+    'data persists after the database is closed and reopened (restart)',
+    () async {
+      final repo = TaskRepository(database: testDb);
+      await repo.insertTask(
+        TaskItem(name: 'Call Mum', lastCompletedAt: DateTime(2026, 9, 6)),
+      );
 
-    // Simulate an app restart: close the connection, then read again.
-    await testDb.close();
+      // Simulate an app restart: close the connection, then read again.
+      await testDb.close();
 
-    final repoAfterRestart = TaskRepository(database: testDb);
-    final all = await repoAfterRestart.getAllTasks();
-    expect(all.length, 1);
-    expect(all.first.name, 'Call Mum');
-  });
+      final repoAfterRestart = TaskRepository(database: testDb);
+      final all = await repoAfterRestart.getAllTasks();
+      expect(all.length, 1);
+      expect(all.first.name, 'Call Mum');
+    },
+  );
 }

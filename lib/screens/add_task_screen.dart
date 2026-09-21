@@ -19,8 +19,7 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  late final TaskRepository _repository =
-      widget.repository ?? TaskRepository();
+  late final TaskRepository _repository = widget.repository ?? TaskRepository();
 
   /// The selected date. Defaults to today; the picker forbids the future.
   DateTime _lastCompletedAt = DateTime.now();
@@ -92,10 +91,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 onTap: _pickDate,
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _save,
-                child: const Text('SAVE'),
-              ),
+              FilledButton(onPressed: _save, child: const Text('SAVE')),
             ],
           ),
         ),

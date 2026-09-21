@@ -79,8 +79,9 @@ void main() {
     });
   });
 
-  testWidgets('add screen saves a Chinese + emoji name',
-      (WidgetTester tester) async {
+  testWidgets('add screen saves a Chinese + emoji name', (
+    WidgetTester tester,
+  ) async {
     // Host screen pushes AddTaskScreen so popping is safe.
     await tester.pumpWidget(
       MaterialApp(

@@ -77,7 +77,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('pre-fills the current name and date', (WidgetTester tester) async {
+  testWidgets('pre-fills the current name and date', (
+    WidgetTester tester,
+  ) async {
     TaskItem? task;
     await tester.runAsync(() async {
       task = await seedTask();
@@ -88,8 +90,9 @@ void main() {
     expect(find.text('2026-07-14'), findsOneWidget);
   });
 
-  testWidgets('saving a rename persists to the database',
-      (WidgetTester tester) async {
+  testWidgets('saving a rename persists to the database', (
+    WidgetTester tester,
+  ) async {
     TaskItem? task;
     await tester.runAsync(() async {
       task = await seedTask();
@@ -117,8 +120,9 @@ void main() {
     expect(all!.first.name, 'Change air filter + vent');
   });
 
-  testWidgets('cancel keeps the task, confirm deletes it',
-      (WidgetTester tester) async {
+  testWidgets('cancel keeps the task, confirm deletes it', (
+    WidgetTester tester,
+  ) async {
     TaskItem? task;
     await tester.runAsync(() async {
       task = await seedTask(name: 'Clean bathroom');

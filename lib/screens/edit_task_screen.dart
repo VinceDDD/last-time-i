@@ -22,13 +22,13 @@ class EditTaskScreen extends StatefulWidget {
 
 class _EditTaskScreenState extends State<EditTaskScreen> {
   final _formKey = GlobalKey<FormState>();
-  late final TaskRepository _repository =
-      widget.repository ?? TaskRepository();
+  late final TaskRepository _repository = widget.repository ?? TaskRepository();
   late final TaskService _service = TaskService(repository: _repository);
 
   /// The name field, pre-filled with the current name.
-  late final TextEditingController _nameController =
-      TextEditingController(text: widget.task.name);
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.task.name,
+  );
 
   /// The selected date, starting from the current one.
   late DateTime _lastCompletedAt = widget.task.lastCompletedAt;
@@ -126,10 +126,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 onTap: _pickDate,
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _save,
-                child: const Text('SAVE'),
-              ),
+              FilledButton(onPressed: _save, child: const Text('SAVE')),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: _delete,

@@ -5,7 +5,7 @@ import '../models/task_item.dart';
 /// Screens and services go through this class, never to SQLite directly.
 class TaskRepository {
   TaskRepository({AppDatabase? database})
-      : _appDatabase = database ?? AppDatabase.instance;
+    : _appDatabase = database ?? AppDatabase.instance;
 
   final AppDatabase _appDatabase;
 
@@ -37,10 +37,6 @@ class TaskRepository {
   /// Permanently removes the task with the given id.
   Future<void> deleteTask(int id) async {
     final db = await _appDatabase.database;
-    await db.delete(
-      'tasks',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 }
