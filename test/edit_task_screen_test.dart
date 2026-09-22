@@ -28,11 +28,13 @@ void main() {
   Future<TaskItem> seedTask({
     String name = 'Change air filter',
     DateTime? lastCompletedAt,
+    int? intervalDays,
   }) async {
     return TaskRepository(database: testDb).insertTask(
       TaskItem(
         name: name,
         lastCompletedAt: lastCompletedAt ?? DateTime(2026, 7, 14),
+        intervalDays: intervalDays,
       ),
     );
   }
@@ -100,7 +102,7 @@ void main() {
     await pumpEditViaHost(tester, task!);
 
     await tester.enterText(
-      find.byType(TextFormField),
+      find.byKey(const Key('taskNameField')),
       'Change air filter + vent',
     );
     await tester.tap(find.text('SAVE'));
@@ -118,6 +120,53 @@ void main() {
     expect(all, isNotNull);
     expect(all!.length, 1);
     expect(all!.first.name, 'Change air filter + vent');
+  });
+
+  testWidgets('saving an interval persists it', (WidgetTester tester) async {
+    TaskItem? task;
+    await tester.runAsync(() async {
+      task = await seedTask();
+    });
+    await pumpEditViaHost(tester, task!);
+
+    await tester.enterText(find.byKey(const Key('intervalField')), '90');
+    await tester.tap(find.text('SAVE'));
+
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    List<TaskItem>? all;
+    await tester.runAsync(() async {
+      all = await TaskRepository(database: testDb).getAllTasks();
+    });
+    expect(all!.first.intervalDays, 90);
+  });
+
+  testWidgets('clearing the interval removes it', (WidgetTester tester) async {
+    TaskItem? task;
+    await tester.runAsync(() async {
+      task = await seedTask(intervalDays: 90);
+    });
+    await pumpEditViaHost(tester, task!);
+
+    // The field is pre-filled from the saved task.
+    expect(find.text('90'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('intervalField')), '');
+    await tester.tap(find.text('SAVE'));
+
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    List<TaskItem>? all;
+    await tester.runAsync(() async {
+      all = await TaskRepository(database: testDb).getAllTasks();
+    });
+    expect(all!.first.intervalDays, isNull);
   });
 
   testWidgets('cancel keeps the task, confirm deletes it', (
