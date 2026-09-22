@@ -81,7 +81,10 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField), 'Change air filter');
+    await tester.enterText(
+      find.byKey(const Key('taskNameField')),
+      'Change air filter',
+    );
     await tester.tap(find.text('SAVE'));
 
     // The database insert is real async I/O; give it time to complete.
@@ -100,5 +103,49 @@ void main() {
     expect(all, isNotNull);
     expect(all!.length, 1);
     expect(all!.first.name, 'Change air filter');
+  });
+
+  testWidgets('saves a task with a target interval', (
+    WidgetTester tester,
+  ) async {
+    TaskItem? popped;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                popped = await Navigator.of(context).push<TaskItem>(
+                  MaterialPageRoute(
+                    builder: (_) => AddTaskScreen(
+                      repository: TaskRepository(database: testDb),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('taskNameField')),
+      'Change air filter',
+    );
+    await tester.enterText(find.byKey(const Key('intervalField')), '90');
+    await tester.tap(find.text('SAVE'));
+
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(popped, isNotNull);
+    expect(popped!.intervalDays, 90);
   });
 }

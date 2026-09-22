@@ -44,3 +44,32 @@ String daysAgoLabel(DateTime date) {
   }
   return '$days days ago';
 }
+
+/// True when the task is past its target interval and should be flagged.
+///
+/// A task with no interval ([intervalDays] == null) is never overdue.
+bool isOverdue(DateTime lastCompletedAt, {int? intervalDays}) {
+  return intervalDays != null && daysAgo(lastCompletedAt) > intervalDays;
+}
+
+/// Status label for a task card.
+///
+/// With no interval: "X days ago" (same as [daysAgoLabel]).
+/// With an interval:
+///  - due exactly today  -> "Due today"
+///  - past the interval  -> "N days overdue" (or "1 day overdue")
+///  - not due yet        -> "X days ago"
+String statusLabel(DateTime lastCompletedAt, {int? intervalDays}) {
+  if (intervalDays == null) {
+    return daysAgoLabel(lastCompletedAt);
+  }
+  final days = daysAgo(lastCompletedAt);
+  if (days == intervalDays) {
+    return 'Due today';
+  }
+  if (days > intervalDays) {
+    final overdueDays = days - intervalDays;
+    return overdueDays == 1 ? '1 day overdue' : '$overdueDays days overdue';
+  }
+  return daysAgoLabel(lastCompletedAt);
+}

@@ -29,26 +29,55 @@ class TaskService {
     return null;
   }
 
+  /// Returns an error message for an invalid interval, or null.
+  ///
+  /// An interval is optional: null means "no target"; when set it must be
+  /// at least 1 day (0 or negative intervals are meaningless).
+  static String? validateInterval(int? intervalDays) {
+    if (intervalDays != null && intervalDays < 1) {
+      return 'Interval must be at least 1 day';
+    }
+    return null;
+  }
+
   /// Returns the first error for an invalid (name, date) pair, or null.
   ///
   /// These are the product rules from PRODUCT_SPEC: the name must not be
   /// blank and the date must not be in the future.
-  static String? validate(String name, DateTime lastCompletedAt) {
+  static String? validate(
+    String name,
+    DateTime lastCompletedAt, {
+    int? intervalDays,
+  }) {
     final nameError = validateName(name);
     if (nameError != null) {
       return nameError;
     }
-    return validateDate(lastCompletedAt);
+    final dateError = validateDate(lastCompletedAt);
+    if (dateError != null) {
+      return dateError;
+    }
+    return validateInterval(intervalDays);
   }
 
   /// Validates and creates a task, returning it with its assigned id.
-  Future<TaskItem> addTask(String name, DateTime lastCompletedAt) async {
-    final error = validate(name, lastCompletedAt);
+  ///
+  /// [intervalDays] is optional; null means the task has no target interval.
+  Future<TaskItem> addTask(
+    String name,
+    DateTime lastCompletedAt, {
+    int? intervalDays,
+  }) async {
+    final error = validate(name, lastCompletedAt, intervalDays: intervalDays);
     if (error != null) {
       throw ArgumentError(error);
     }
     return _repository.insertTask(
-      TaskItem(name: name.trim(), lastCompletedAt: lastCompletedAt),
+      TaskItem(
+        name: name.trim(),
+        lastCompletedAt: lastCompletedAt,
+        intervalDays: intervalDays,
+      ),
     );
   }
 
@@ -62,9 +91,13 @@ class TaskService {
     return updated;
   }
 
-  /// Validates and saves changes (rename, new date) for [task].
+  /// Validates and saves changes (rename, new date, interval) for [task].
   Future<TaskItem> updateTask(TaskItem task) async {
-    final error = validate(task.name, task.lastCompletedAt);
+    final error = validate(
+      task.name,
+      task.lastCompletedAt,
+      intervalDays: task.intervalDays,
+    );
     if (error != null) {
       throw ArgumentError(error);
     }
