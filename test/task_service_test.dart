@@ -118,4 +118,51 @@ void main() {
     expect(all.length, 1);
     expect(all.first.name, 'Change air filter');
   });
+
+  test('addTask saves a task with an interval', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+
+    final saved = await service.addTask(
+      'Change air filter',
+      DateTime(2026, 9, 1),
+      intervalDays: 90,
+    );
+
+    expect(saved.intervalDays, 90);
+    final all = await repo.getAllTasks();
+    expect(all.first.intervalDays, 90);
+  });
+
+  test('addTask rejects an interval of zero', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+
+    expect(
+      () => service.addTask(
+        'Change air filter',
+        DateTime(2026, 9, 1),
+        intervalDays: 0,
+      ),
+      throwsArgumentError,
+    );
+    expect(await repo.getAllTasks(), isEmpty);
+  });
+
+  test('updateTask can clear an interval', () async {
+    final repo = TaskRepository(database: testDb);
+    final service = TaskService(repository: repo);
+    final created = await repo.insertTask(
+      TaskItem(
+        name: 'Water plants',
+        lastCompletedAt: DateTime(2026, 9, 1),
+        intervalDays: 30,
+      ),
+    );
+
+    await service.updateTask(created.copyWith(intervalDays: null));
+
+    final all = await repo.getAllTasks();
+    expect(all.first.intervalDays, isNull);
+  });
 }

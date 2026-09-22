@@ -14,7 +14,12 @@ class TaskItem {
     this.id,
     this.createdAt,
     this.updatedAt,
+    this.intervalDays,
   });
+
+  /// Sentinel used by [copyWith] to tell "intervalDays not passed"
+  /// apart from "intervalDays passed as null" (which clears the field).
+  static const Object _intervalUnset = Object();
 
   /// Database primary key. Null until the item has been saved.
   final int? id;
@@ -31,14 +36,23 @@ class TaskItem {
   /// When the item was last modified.
   final DateTime? updatedAt;
 
+  /// Optional target interval in days, e.g. 90 = "every 90 days".
+  /// Null means no target interval (the task is not tracked for overdue).
+  final int? intervalDays;
+
   /// Returns a copy with any of the fields replaced.
   /// Used for edits such as renaming or "mark done today".
+  ///
+  /// Note the sentinel for [intervalDays]: because the field is nullable,
+  /// a plain `int?` parameter cannot express "remove the interval".
+  /// Passing `null` explicitly clears it; not passing it keeps the old value.
   TaskItem copyWith({
     int? id,
     String? name,
     DateTime? lastCompletedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? intervalDays = _intervalUnset,
   }) {
     return TaskItem(
       id: id ?? this.id,
@@ -46,6 +60,9 @@ class TaskItem {
       lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      intervalDays: identical(intervalDays, _intervalUnset)
+          ? this.intervalDays
+          : intervalDays as int?,
     );
   }
 
@@ -57,6 +74,7 @@ class TaskItem {
       'last_completed_at': formatDate(lastCompletedAt),
       'created_at': createdAt == null ? null : formatDate(createdAt!),
       'updated_at': updatedAt == null ? null : formatDate(updatedAt!),
+      'interval_days': intervalDays,
     };
   }
 
@@ -72,6 +90,7 @@ class TaskItem {
       updatedAt: map['updated_at'] == null
           ? null
           : DateTime.parse(map['updated_at'] as String),
+      intervalDays: map['interval_days'] as int?,
     );
   }
 
@@ -84,10 +103,17 @@ class TaskItem {
             other.name == name &&
             other.lastCompletedAt == lastCompletedAt &&
             other.createdAt == createdAt &&
-            other.updatedAt == updatedAt;
+            other.updatedAt == updatedAt &&
+            other.intervalDays == intervalDays;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, lastCompletedAt, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    lastCompletedAt,
+    createdAt,
+    updatedAt,
+    intervalDays,
+  );
 }

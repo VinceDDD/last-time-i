@@ -66,6 +66,28 @@ void main() {
     expect(all.first.updatedAt, isNotNull);
   });
 
+  test('intervalDays survives a database round-trip', () async {
+    final repo = TaskRepository(database: testDb);
+
+    // A task with an interval reads back with that interval.
+    await repo.insertTask(
+      TaskItem(
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+        intervalDays: 90,
+      ),
+    );
+    final withInterval = await repo.getAllTasks();
+    expect(withInterval.first.intervalDays, 90);
+
+    // A task without an interval reads back as null.
+    await repo.insertTask(
+      TaskItem(name: 'Call Mum', lastCompletedAt: DateTime(2026, 8, 1)),
+    );
+    final all = await repo.getAllTasks();
+    expect(all.last.intervalDays, isNull);
+  });
+
   test('update persists changes to an existing task', () async {
     final repo = TaskRepository(database: testDb);
     final created = await repo.insertTask(

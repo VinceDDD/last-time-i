@@ -18,7 +18,9 @@ class AppDatabase {
 
   final String _dbName;
 
-  static const _dbVersion = 1;
+  /// Bump this when the schema changes, and add a migration step in
+  /// [_onUpgrade] so existing installs are upgraded, not recreated.
+  static const _dbVersion = 2;
 
   /// The open database connection, or null before the first open.
   Database? _database;
@@ -39,10 +41,15 @@ class AppDatabase {
     final basePath = await getDatabasesPath();
     // Join the folder and file name using the correct separator.
     final path = p.join(basePath, _dbName);
-    return openDatabase(path, version: _dbVersion, onCreate: _onCreate);
+    return openDatabase(
+      path,
+      version: _dbVersion,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
   }
 
-  /// Runs once when the database file is first created.
+  /// Runs once when the database file is first created (fresh install).
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE tasks (
@@ -50,9 +57,21 @@ class AppDatabase {
         name TEXT NOT NULL,
         last_completed_at TEXT NOT NULL,
         created_at TEXT,
-        updated_at TEXT
+        updated_at TEXT,
+        interval_days INTEGER
       )
     ''');
+  }
+
+  /// Runs when an existing database has an older schema version.
+  ///
+  /// Each new version adds one step here; old installs are migrated
+  /// forward step by step, keeping their data.
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // v1 -> v2: add the optional target interval column.
+      await db.execute('ALTER TABLE tasks ADD COLUMN interval_days INTEGER');
+    }
   }
 
   /// Closes the connection and forgets it, so the next access

@@ -39,5 +39,39 @@ void main() {
 
       expect(a == a.copyWith(lastCompletedAt: DateTime(2026, 7, 15)), isFalse);
     });
+
+    test('a different interval compares unequal', () {
+      final a = TaskItem(
+        id: 1,
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+      );
+
+      expect(a == a.copyWith(intervalDays: 90), isFalse);
+    });
+  });
+
+  group('TaskItem copyWith and the interval sentinel', () {
+    test('passing null to copyWith clears the interval', () {
+      final a = TaskItem(
+        id: 1,
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+        intervalDays: 90,
+      );
+
+      expect(a.copyWith(intervalDays: null).intervalDays, isNull);
+    });
+
+    test('not passing intervalDays keeps the old value', () {
+      final a = TaskItem(
+        id: 1,
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+        intervalDays: 90,
+      );
+
+      expect(a.copyWith(name: 'New name').intervalDays, 90);
+    });
   });
 }

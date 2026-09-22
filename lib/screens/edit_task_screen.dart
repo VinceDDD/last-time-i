@@ -6,7 +6,7 @@ import '../services/task_service.dart';
 import '../utils/date_formatter.dart';
 
 /// Screen for editing an existing task: rename it, change the date,
-/// or delete it (with confirmation).
+/// set or clear the target interval, or delete it (with confirmation).
 class EditTaskScreen extends StatefulWidget {
   const EditTaskScreen({super.key, required this.task, this.repository});
 
@@ -30,13 +30,28 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     text: widget.task.name,
   );
 
+  /// The interval field, pre-filled with the current interval (or blank).
+  late final TextEditingController _intervalController = TextEditingController(
+    text: widget.task.intervalDays?.toString() ?? '',
+  );
+
   /// The selected date, starting from the current one.
   late DateTime _lastCompletedAt = widget.task.lastCompletedAt;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _intervalController.dispose();
     super.dispose();
+  }
+
+  /// Reads the interval field: empty -> null, otherwise the number.
+  int? _parseInterval(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    return int.tryParse(trimmed);
   }
 
   /// Opens the date picker and stores the chosen date.
@@ -63,6 +78,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       widget.task.copyWith(
         name: _nameController.text.trim(),
         lastCompletedAt: _lastCompletedAt,
+        intervalDays: _parseInterval(_intervalController.text),
       ),
     );
     if (!mounted) return;
@@ -111,6 +127,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
+                key: const Key('taskNameField'),
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'What did you do?',
@@ -123,6 +140,27 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                 subtitle: Text(formatDate(_lastCompletedAt)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                key: const Key('intervalField'),
+                controller: _intervalController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Every N days (optional)',
+                  hintText: 'e.g. 90',
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) {
+                    return null;
+                  }
+                  final parsed = int.tryParse(text);
+                  if (parsed == null) {
+                    return 'Must be a whole number';
+                  }
+                  return TaskService.validateInterval(parsed);
+                },
               ),
               const SizedBox(height: 16),
               FilledButton(onPressed: _save, child: const Text('SAVE')),

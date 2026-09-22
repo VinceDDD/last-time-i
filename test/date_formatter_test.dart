@@ -85,6 +85,38 @@ void main() {
     });
   });
 
+  group('statusLabel and isOverdue', () {
+    test('no interval keeps the days-ago label and is never overdue', () {
+      final d = today().subtract(const Duration(days: 47));
+      expect(isOverdue(d), isFalse);
+      expect(statusLabel(d), '47 days ago');
+    });
+
+    test('before the interval keeps the days-ago label', () {
+      final d = today().subtract(const Duration(days: 89));
+      expect(isOverdue(d, intervalDays: 90), isFalse);
+      expect(statusLabel(d, intervalDays: 90), '89 days ago');
+    });
+
+    test('exactly on the interval is "Due today"', () {
+      final d = today().subtract(const Duration(days: 90));
+      expect(isOverdue(d, intervalDays: 90), isFalse);
+      expect(statusLabel(d, intervalDays: 90), 'Due today');
+    });
+
+    test('one day past the interval is "1 day overdue"', () {
+      final d = today().subtract(const Duration(days: 91));
+      expect(isOverdue(d, intervalDays: 90), isTrue);
+      expect(statusLabel(d, intervalDays: 90), '1 day overdue');
+    });
+
+    test('ten days past the interval is "10 days overdue"', () {
+      final d = today().subtract(const Duration(days: 100));
+      expect(isOverdue(d, intervalDays: 90), isTrue);
+      expect(statusLabel(d, intervalDays: 90), '10 days overdue');
+    });
+  });
+
   group('formatDate', () {
     test('pads month and day with zeros', () {
       expect(formatDate(DateTime(2026, 7, 4)), '2026-07-04');

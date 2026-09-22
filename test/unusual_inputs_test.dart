@@ -106,7 +106,10 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField), '换空气滤芯 🧽');
+    await tester.enterText(
+      find.byKey(const Key('taskNameField')),
+      '换空气滤芯 🧽',
+    );
     await tester.tap(find.text('SAVE'));
 
     // Let the real database write complete, then let the screen pop.

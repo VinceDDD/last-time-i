@@ -4,7 +4,8 @@ import '../repositories/task_repository.dart';
 import '../services/task_service.dart';
 import '../utils/date_formatter.dart';
 
-/// Screen for adding a new task: a name plus the date it was last completed.
+/// Screen for adding a new task: a name, the date it was last completed,
+/// and an optional target interval ("every N days").
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key, this.repository});
 
@@ -19,6 +20,7 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _intervalController = TextEditingController();
   late final TaskRepository _repository = widget.repository ?? TaskRepository();
   late final TaskService _service = TaskService(repository: _repository);
 
@@ -28,7 +30,17 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _intervalController.dispose();
     super.dispose();
+  }
+
+  /// Reads the interval field: empty -> null, otherwise the number.
+  int? _parseInterval(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    return int.tryParse(trimmed);
   }
 
   /// Opens the date picker and stores the chosen date.
@@ -54,6 +66,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final saved = await _service.addTask(
       _nameController.text,
       _lastCompletedAt,
+      intervalDays: _parseInterval(_intervalController.text),
     );
     if (!mounted) return; // screen may have closed while awaiting
     Navigator.of(context).pop(saved);
@@ -71,6 +84,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
+                key: const Key('taskNameField'),
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'What did you do?',
@@ -84,6 +98,27 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 subtitle: Text(formatDate(_lastCompletedAt)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: _pickDate,
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                key: const Key('intervalField'),
+                controller: _intervalController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Every N days (optional)',
+                  hintText: 'e.g. 90',
+                ),
+                validator: (value) {
+                  final text = value?.trim() ?? '';
+                  if (text.isEmpty) {
+                    return null;
+                  }
+                  final parsed = int.tryParse(text);
+                  if (parsed == null) {
+                    return 'Must be a whole number';
+                  }
+                  return TaskService.validateInterval(parsed);
+                },
               ),
               const SizedBox(height: 16),
               FilledButton(onPressed: _save, child: const Text('SAVE')),
