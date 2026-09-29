@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
 import '../services/task_service.dart';
+import '../utils/date_formatter.dart';
 import '../utils/task_grouping.dart';
 import '../widgets/task_card.dart';
 import 'add_task_screen.dart';
@@ -111,11 +112,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  /// The grouped list: one section header per category, then its cards.
+  /// The grouped list: a reminder banner on top, then one section
+  /// header per category followed by its cards (overdue first).
   Widget _buildTaskList(List<TaskItem> tasks) {
-    final sections = groupTasks(tasks);
+    final now = DateTime.now();
+    // Overdue/due-today tasks rise to the top of their sections.
+    final sections = groupTasks(sortByReminder(tasks, now: now));
+    final overdueCount = tasks
+        .where(
+          (t) => isOverdue(
+            t.lastCompletedAt,
+            intervalDays: t.intervalDays,
+            now: now,
+          ),
+        )
+        .length;
+    final dueTodayCount = tasks
+        .where(
+          (t) => isDueToday(
+            t.lastCompletedAt,
+            intervalDays: t.intervalDays,
+            now: now,
+          ),
+        )
+        .length;
     return ListView(
       children: [
+        if (overdueCount + dueTodayCount > 0)
+          _OverdueBanner(
+            overdueCount: overdueCount,
+            dueTodayCount: dueTodayCount,
+          ),
         for (final section in sections) ...[
           _SectionHeader(section: section),
           for (final task in section.tasks)
@@ -126,6 +153,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
         ],
       ],
+    );
+  }
+}
+
+/// The reminder strip shown above the list: how many tasks are past
+/// their target interval and how many fall due today.
+class _OverdueBanner extends StatelessWidget {
+  const _OverdueBanner({
+    required this.overdueCount,
+    required this.dueTodayCount,
+  });
+
+  final int overdueCount;
+  final int dueTodayCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final parts = <String>[
+      if (overdueCount > 0)
+        overdueCount == 1 ? '1 task overdue' : '$overdueCount tasks overdue',
+      if (dueTodayCount > 0)
+        dueTodayCount == 1 ? '1 due today' : '$dueTodayCount due today',
+    ];
+    return Material(
+      color: colors.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(
+              Icons.notifications_active_outlined,
+              color: colors.onErrorContainer,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                parts.join(' · '),
+                style: TextStyle(color: colors.onErrorContainer),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

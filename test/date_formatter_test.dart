@@ -117,6 +117,27 @@ void main() {
     });
   });
 
+  group('isDueToday', () {
+    test('with no interval it is never due today', () {
+      expect(isDueToday(today()), isFalse);
+    });
+
+    test('exactly on the interval is due today', () {
+      final d = today().subtract(const Duration(days: 90));
+      expect(isDueToday(d, intervalDays: 90), isTrue);
+    });
+
+    test('one day before the interval is not due yet', () {
+      final d = today().subtract(const Duration(days: 89));
+      expect(isDueToday(d, intervalDays: 90), isFalse);
+    });
+
+    test('one day past the interval is overdue, not due today', () {
+      final d = today().subtract(const Duration(days: 91));
+      expect(isDueToday(d, intervalDays: 90), isFalse);
+    });
+  });
+
   group('formatDate', () {
     test('pads month and day with zeros', () {
       expect(formatDate(DateTime(2026, 7, 4)), '2026-07-04');

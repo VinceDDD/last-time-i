@@ -93,6 +93,8 @@ void main() {
     expect(find.text('47 days ago'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Nothing here yet.'), findsNothing);
+    // No intervals -> nothing overdue -> no reminder banner.
+    expect(find.textContaining('overdue'), findsNothing);
   });
 
   testWidgets('groups tasks by category with section headers', (
@@ -238,5 +240,65 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Added while paused'), findsOneWidget);
+  });
+
+  testWidgets('shows a reminder banner for overdue and due-today tasks', (
+    WidgetTester tester,
+  ) async {
+    final repo = TaskRepository(database: testDb);
+    await tester.runAsync(() async {
+      final now = DateTime.now();
+      await repo.insertTask(
+        TaskItem(
+          name: 'Overdue task',
+          lastCompletedAt: now.subtract(const Duration(days: 100)),
+          intervalDays: 90,
+        ),
+      );
+      await repo.insertTask(
+        TaskItem(
+          name: 'Due today task',
+          lastCompletedAt: now.subtract(const Duration(days: 90)),
+          intervalDays: 90,
+        ),
+      );
+    });
+
+    await pumpHome(tester);
+
+    expect(find.text('1 task overdue · 1 due today'), findsOneWidget);
+  });
+
+  testWidgets('sorts overdue tasks to the top of their section', (
+    WidgetTester tester,
+  ) async {
+    final repo = TaskRepository(database: testDb);
+    await tester.runAsync(() async {
+      final now = DateTime.now();
+      // Same category; the NOT-due task is inserted first.
+      await repo.insertTask(
+        TaskItem(
+          name: 'Not due',
+          lastCompletedAt: now.subtract(const Duration(days: 5)),
+          intervalDays: 90,
+          category: TaskCategory.home,
+        ),
+      );
+      await repo.insertTask(
+        TaskItem(
+          name: 'Overdue one',
+          lastCompletedAt: now.subtract(const Duration(days: 100)),
+          intervalDays: 90,
+          category: TaskCategory.home,
+        ),
+      );
+    });
+
+    await pumpHome(tester);
+
+    // The overdue card must render above the not-due card.
+    final overdueY = tester.getTopLeft(find.text('Overdue one')).dy;
+    final notDueY = tester.getTopLeft(find.text('Not due')).dy;
+    expect(overdueY, lessThan(notDueY));
   });
 }
