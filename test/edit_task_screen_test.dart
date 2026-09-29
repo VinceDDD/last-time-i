@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:last_time_i/database/app_database.dart';
+import 'package:last_time_i/models/task_category.dart';
 import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 import 'package:last_time_i/screens/edit_task_screen.dart';
@@ -29,12 +30,14 @@ void main() {
     String name = 'Change air filter',
     DateTime? lastCompletedAt,
     int? intervalDays,
+    TaskCategory? category,
   }) async {
     return TaskRepository(database: testDb).insertTask(
       TaskItem(
         name: name,
         lastCompletedAt: lastCompletedAt ?? DateTime(2026, 7, 14),
         intervalDays: intervalDays,
+        category: category,
       ),
     );
   }
@@ -167,6 +170,62 @@ void main() {
       all = await TaskRepository(database: testDb).getAllTasks();
     });
     expect(all!.first.intervalDays, isNull);
+  });
+
+  testWidgets('changing the category persists it', (WidgetTester tester) async {
+    TaskItem? task;
+    await tester.runAsync(() async {
+      task = await seedTask(category: TaskCategory.home);
+    });
+    await pumpEditViaHost(tester, task!);
+
+    // The dropdown shows the current category.
+    expect(find.text('Home'), findsOneWidget);
+
+    // Switch to Car.
+    await tester.tap(find.byKey(const Key('categoryField')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Car').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SAVE'));
+
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    List<TaskItem>? all;
+    await tester.runAsync(() async {
+      all = await TaskRepository(database: testDb).getAllTasks();
+    });
+    expect(all!.first.category, TaskCategory.car);
+  });
+
+  testWidgets('setting the category to None clears it', (
+    WidgetTester tester,
+  ) async {
+    TaskItem? task;
+    await tester.runAsync(() async {
+      task = await seedTask(category: TaskCategory.home);
+    });
+    await pumpEditViaHost(tester, task!);
+
+    await tester.tap(find.byKey(const Key('categoryField')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('None').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SAVE'));
+
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    List<TaskItem>? all;
+    await tester.runAsync(() async {
+      all = await TaskRepository(database: testDb).getAllTasks();
+    });
+    expect(all!.first.category, isNull);
   });
 
   testWidgets('cancel keeps the task, confirm deletes it', (

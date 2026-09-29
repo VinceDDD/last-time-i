@@ -1,3 +1,4 @@
+import '../models/task_category.dart';
 import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
 
@@ -62,11 +63,12 @@ class TaskService {
 
   /// Validates and creates a task, returning it with its assigned id.
   ///
-  /// [intervalDays] is optional; null means the task has no target interval.
+  /// [intervalDays] and [category] are optional; null means "not set".
   Future<TaskItem> addTask(
     String name,
     DateTime lastCompletedAt, {
     int? intervalDays,
+    TaskCategory? category,
   }) async {
     final error = validate(name, lastCompletedAt, intervalDays: intervalDays);
     if (error != null) {
@@ -77,6 +79,7 @@ class TaskService {
         name: name.trim(),
         lastCompletedAt: lastCompletedAt,
         intervalDays: intervalDays,
+        category: category,
       ),
     );
   }
@@ -91,7 +94,7 @@ class TaskService {
     return updated;
   }
 
-  /// Validates and saves changes (rename, new date, interval) for [task].
+  /// Validates and saves changes (rename, new date, interval, category).
   Future<TaskItem> updateTask(TaskItem task) async {
     final error = validate(
       task.name,

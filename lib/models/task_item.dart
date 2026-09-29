@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../utils/date_formatter.dart';
+import 'task_category.dart';
 
 /// A single tracked task/activity, e.g. "Change air filter".
 ///
@@ -15,11 +16,16 @@ class TaskItem {
     this.createdAt,
     this.updatedAt,
     this.intervalDays,
+    this.category,
   });
 
-  /// Sentinel used by [copyWith] to tell "intervalDays not passed"
-  /// apart from "intervalDays passed as null" (which clears the field).
-  static const Object _intervalUnset = Object();
+  /// Sentinel used by [copyWith] to tell "nullable field not passed"
+  /// apart from "nullable field passed as null" (which clears it).
+  ///
+  /// A plain `int?`/`TaskCategory?` parameter cannot express that
+  /// difference, so both nullable-editable fields use this sentinel:
+  /// not passing keeps the old value; passing null clears it.
+  static const Object _unset = Object();
 
   /// Database primary key. Null until the item has been saved.
   final int? id;
@@ -40,19 +46,20 @@ class TaskItem {
   /// Null means no target interval (the task is not tracked for overdue).
   final int? intervalDays;
 
+  /// Optional category, e.g. [TaskCategory.home].
+  /// Null means uncategorized.
+  final TaskCategory? category;
+
   /// Returns a copy with any of the fields replaced.
   /// Used for edits such as renaming or "mark done today".
-  ///
-  /// Note the sentinel for [intervalDays]: because the field is nullable,
-  /// a plain `int?` parameter cannot express "remove the interval".
-  /// Passing `null` explicitly clears it; not passing it keeps the old value.
   TaskItem copyWith({
     int? id,
     String? name,
     DateTime? lastCompletedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
-    Object? intervalDays = _intervalUnset,
+    Object? intervalDays = _unset,
+    Object? category = _unset,
   }) {
     return TaskItem(
       id: id ?? this.id,
@@ -60,9 +67,12 @@ class TaskItem {
       lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      intervalDays: identical(intervalDays, _intervalUnset)
+      intervalDays: identical(intervalDays, _unset)
           ? this.intervalDays
           : intervalDays as int?,
+      category: identical(category, _unset)
+          ? this.category
+          : category as TaskCategory?,
     );
   }
 
@@ -75,6 +85,7 @@ class TaskItem {
       'created_at': createdAt == null ? null : formatDate(createdAt!),
       'updated_at': updatedAt == null ? null : formatDate(updatedAt!),
       'interval_days': intervalDays,
+      'category': category?.name,
     };
   }
 
@@ -91,6 +102,10 @@ class TaskItem {
           ? null
           : DateTime.parse(map['updated_at'] as String),
       intervalDays: map['interval_days'] as int?,
+      // asNameMap returns null for unknown names instead of throwing.
+      category: map['category'] == null
+          ? null
+          : TaskCategory.values.asNameMap()[map['category'] as String],
     );
   }
 
@@ -104,7 +119,8 @@ class TaskItem {
             other.lastCompletedAt == lastCompletedAt &&
             other.createdAt == createdAt &&
             other.updatedAt == updatedAt &&
-            other.intervalDays == intervalDays;
+            other.intervalDays == intervalDays &&
+            other.category == category;
   }
 
   @override
@@ -115,5 +131,6 @@ class TaskItem {
     createdAt,
     updatedAt,
     intervalDays,
+    category,
   );
 }

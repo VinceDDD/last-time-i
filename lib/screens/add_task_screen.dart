@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../models/task_category.dart';
 import '../repositories/task_repository.dart';
 import '../services/task_service.dart';
 import '../utils/date_formatter.dart';
 
 /// Screen for adding a new task: a name, the date it was last completed,
-/// and an optional target interval ("every N days").
+/// an optional target interval ("every N days") and an optional category.
 class AddTaskScreen extends StatefulWidget {
   const AddTaskScreen({super.key, this.repository});
 
@@ -18,6 +19,11 @@ class AddTaskScreen extends StatefulWidget {
 }
 
 class _AddTaskScreenState extends State<AddTaskScreen> {
+  /// Dropdown value representing "no category".
+  /// A String (not a nullable enum) is used because a DropdownButton
+  /// cannot reliably represent a null item value.
+  static const _noCategory = '';
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _intervalController = TextEditingController();
@@ -26,6 +32,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
 
   /// The selected date. Defaults to today; the picker forbids the future.
   DateTime _lastCompletedAt = DateTime.now();
+
+  /// The selected category; null means uncategorized.
+  TaskCategory? _category;
 
   @override
   void dispose() {
@@ -67,6 +76,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       _nameController.text,
       _lastCompletedAt,
       intervalDays: _parseInterval(_intervalController.text),
+      category: _category,
     );
     if (!mounted) return; // screen may have closed while awaiting
     Navigator.of(context).pop(saved);
@@ -118,6 +128,36 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     return 'Must be a whole number';
                   }
                   return TaskService.validateInterval(parsed);
+                },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                key: const Key('categoryField'),
+                initialValue: _category?.name ?? _noCategory,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: [
+                  const DropdownMenuItem(
+                    value: _noCategory,
+                    child: Text('None'),
+                  ),
+                  for (final category in TaskCategory.values)
+                    DropdownMenuItem(
+                      value: category.name,
+                      child: Row(
+                        children: [
+                          Icon(category.icon, size: 20),
+                          const SizedBox(width: 8),
+                          Text(category.label),
+                        ],
+                      ),
+                    ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _category = (value == null || value.isEmpty)
+                        ? null
+                        : TaskCategory.values.byName(value);
+                  });
                 },
               ),
               const SizedBox(height: 16),

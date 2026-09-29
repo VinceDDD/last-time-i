@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
 import '../services/task_service.dart';
+import '../utils/task_grouping.dart';
 import '../widgets/task_card.dart';
 import 'add_task_screen.dart';
 import 'edit_task_screen.dart';
 
-/// Home screen: shows all tasks with how long ago each was completed.
+/// Home screen: shows all tasks grouped by category, with how long ago
+/// each was completed.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, this.repository});
 
@@ -98,20 +100,55 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           if (tasks.isEmpty) {
             return _EmptyState(onAdd: _openAddScreen);
           }
-          return ListView.builder(
-            itemCount: tasks.length,
-            itemBuilder: (context, index) => TaskCard(
-              task: tasks[index],
-              onMarkDoneToday: () => _markDoneToday(tasks[index]),
-              onTap: () => _openEditScreen(tasks[index]),
-            ),
-          );
+          return _buildTaskList(tasks);
         },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddScreen,
         tooltip: 'Add Item',
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  /// The grouped list: one section header per category, then its cards.
+  Widget _buildTaskList(List<TaskItem> tasks) {
+    final sections = groupTasks(tasks);
+    return ListView(
+      children: [
+        for (final section in sections) ...[
+          _SectionHeader(section: section),
+          for (final task in section.tasks)
+            TaskCard(
+              task: task,
+              onMarkDoneToday: () => _markDoneToday(task),
+              onTap: () => _openEditScreen(task),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+/// A category header: its icon and name (or "Uncategorized").
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.section});
+
+  final TaskSection section;
+
+  @override
+  Widget build(BuildContext context) {
+    final category = section.category;
+    final label = category?.label ?? 'Uncategorized';
+    final icon = category?.icon ?? Icons.label_outline;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(label, style: Theme.of(context).textTheme.titleSmall),
+        ],
       ),
     );
   }

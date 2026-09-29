@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:last_time_i/database/app_database.dart';
+import 'package:last_time_i/models/task_category.dart';
 import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 import 'package:last_time_i/screens/add_task_screen.dart';
@@ -147,5 +148,51 @@ void main() {
 
     expect(popped, isNotNull);
     expect(popped!.intervalDays, 90);
+  });
+
+  testWidgets('saves a task with a category', (WidgetTester tester) async {
+    TaskItem? popped;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                popped = await Navigator.of(context).push<TaskItem>(
+                  MaterialPageRoute(
+                    builder: (_) => AddTaskScreen(
+                      repository: TaskRepository(database: testDb),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('taskNameField')),
+      'Change air filter',
+    );
+    // Open the category dropdown and pick "Home".
+    await tester.tap(find.byKey(const Key('categoryField')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SAVE'));
+
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(popped, isNotNull);
+    expect(popped!.category, TaskCategory.home);
   });
 }

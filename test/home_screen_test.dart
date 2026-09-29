@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:last_time_i/database/app_database.dart';
+import 'package:last_time_i/models/task_category.dart';
 import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 import 'package:last_time_i/screens/home_screen.dart';
@@ -92,6 +93,50 @@ void main() {
     expect(find.text('47 days ago'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Nothing here yet.'), findsNothing);
+  });
+
+  testWidgets('groups tasks by category with section headers', (
+    WidgetTester tester,
+  ) async {
+    final repo = TaskRepository(database: testDb);
+    await tester.runAsync(() async {
+      final now = DateTime.now();
+      await repo.insertTask(
+        TaskItem(
+          name: 'Change air filter',
+          lastCompletedAt: now,
+          category: TaskCategory.home,
+        ),
+      );
+      await repo.insertTask(
+        TaskItem(
+          name: 'Clean bathroom',
+          lastCompletedAt: now,
+          category: TaskCategory.home,
+        ),
+      );
+      await repo.insertTask(
+        TaskItem(
+          name: 'Wash car',
+          lastCompletedAt: now,
+          category: TaskCategory.car,
+        ),
+      );
+      await repo.insertTask(TaskItem(name: 'Call Mum', lastCompletedAt: now));
+    });
+
+    await pumpHome(tester);
+
+    // One header per present category, plus Uncategorized for the rest.
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Car'), findsOneWidget);
+    expect(find.text('Uncategorized'), findsOneWidget);
+
+    // All tasks render under their sections.
+    expect(find.text('Change air filter'), findsOneWidget);
+    expect(find.text('Clean bathroom'), findsOneWidget);
+    expect(find.text('Wash car'), findsOneWidget);
+    expect(find.text('Call Mum'), findsOneWidget);
   });
 
   testWidgets('tapping MARK DONE TODAY resets the label to Today', (
