@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:last_time_i/database/app_database.dart';
+import 'package:last_time_i/models/task_category.dart';
 import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 
@@ -86,6 +87,28 @@ void main() {
     );
     final all = await repo.getAllTasks();
     expect(all.last.intervalDays, isNull);
+  });
+
+  test('category survives a database round-trip', () async {
+    final repo = TaskRepository(database: testDb);
+
+    // A task with a category reads back with that category.
+    await repo.insertTask(
+      TaskItem(
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+        category: TaskCategory.home,
+      ),
+    );
+    final withCategory = await repo.getAllTasks();
+    expect(withCategory.first.category, TaskCategory.home);
+
+    // A task without a category reads back as null.
+    await repo.insertTask(
+      TaskItem(name: 'Call Mum', lastCompletedAt: DateTime(2026, 8, 1)),
+    );
+    final all = await repo.getAllTasks();
+    expect(all.last.category, isNull);
   });
 
   test('update persists changes to an existing task', () async {

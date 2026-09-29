@@ -20,7 +20,7 @@ class AppDatabase {
 
   /// Bump this when the schema changes, and add a migration step in
   /// [_onUpgrade] so existing installs are upgraded, not recreated.
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   /// The open database connection, or null before the first open.
   Database? _database;
@@ -58,7 +58,8 @@ class AppDatabase {
         last_completed_at TEXT NOT NULL,
         created_at TEXT,
         updated_at TEXT,
-        interval_days INTEGER
+        interval_days INTEGER,
+        category TEXT
       )
     ''');
   }
@@ -71,6 +72,10 @@ class AppDatabase {
     if (oldVersion < 2) {
       // v1 -> v2: add the optional target interval column.
       await db.execute('ALTER TABLE tasks ADD COLUMN interval_days INTEGER');
+    }
+    if (oldVersion < 3) {
+      // v2 -> v3: add the optional category column.
+      await db.execute('ALTER TABLE tasks ADD COLUMN category TEXT');
     }
   }
 

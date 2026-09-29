@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../models/task_category.dart';
 import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
 import '../services/task_service.dart';
 import '../utils/date_formatter.dart';
 
 /// Screen for editing an existing task: rename it, change the date,
-/// set or clear the target interval, or delete it (with confirmation).
+/// set or clear the target interval and category, or delete it.
 class EditTaskScreen extends StatefulWidget {
   const EditTaskScreen({super.key, required this.task, this.repository});
 
@@ -21,6 +22,11 @@ class EditTaskScreen extends StatefulWidget {
 }
 
 class _EditTaskScreenState extends State<EditTaskScreen> {
+  /// Dropdown value representing "no category".
+  /// A String (not a nullable enum) is used because a DropdownButton
+  /// cannot reliably represent a null item value.
+  static const _noCategory = '';
+
   final _formKey = GlobalKey<FormState>();
   late final TaskRepository _repository = widget.repository ?? TaskRepository();
   late final TaskService _service = TaskService(repository: _repository);
@@ -37,6 +43,9 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
 
   /// The selected date, starting from the current one.
   late DateTime _lastCompletedAt = widget.task.lastCompletedAt;
+
+  /// The selected category, starting from the current one.
+  late TaskCategory? _category = widget.task.category;
 
   @override
   void dispose() {
@@ -79,6 +88,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         name: _nameController.text.trim(),
         lastCompletedAt: _lastCompletedAt,
         intervalDays: _parseInterval(_intervalController.text),
+        category: _category,
       ),
     );
     if (!mounted) return;
@@ -160,6 +170,36 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                     return 'Must be a whole number';
                   }
                   return TaskService.validateInterval(parsed);
+                },
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                key: const Key('categoryField'),
+                initialValue: _category?.name ?? _noCategory,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: [
+                  const DropdownMenuItem(
+                    value: _noCategory,
+                    child: Text('None'),
+                  ),
+                  for (final category in TaskCategory.values)
+                    DropdownMenuItem(
+                      value: category.name,
+                      child: Row(
+                        children: [
+                          Icon(category.icon, size: 20),
+                          const SizedBox(width: 8),
+                          Text(category.label),
+                        ],
+                      ),
+                    ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _category = (value == null || value.isEmpty)
+                        ? null
+                        : TaskCategory.values.byName(value);
+                  });
                 },
               ),
               const SizedBox(height: 16),

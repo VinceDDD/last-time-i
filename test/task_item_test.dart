@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:last_time_i/models/task_category.dart';
 import 'package:last_time_i/models/task_item.dart';
 
 void main() {
@@ -49,9 +50,19 @@ void main() {
 
       expect(a == a.copyWith(intervalDays: 90), isFalse);
     });
+
+    test('a different category compares unequal', () {
+      final a = TaskItem(
+        id: 1,
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+      );
+
+      expect(a == a.copyWith(category: TaskCategory.home), isFalse);
+    });
   });
 
-  group('TaskItem copyWith and the interval sentinel', () {
+  group('TaskItem copyWith and the sentinel', () {
     test('passing null to copyWith clears the interval', () {
       final a = TaskItem(
         id: 1,
@@ -72,6 +83,28 @@ void main() {
       );
 
       expect(a.copyWith(name: 'New name').intervalDays, 90);
+    });
+
+    test('passing null to copyWith clears the category', () {
+      final a = TaskItem(
+        id: 1,
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+        category: TaskCategory.home,
+      );
+
+      expect(a.copyWith(category: null).category, isNull);
+    });
+
+    test('not passing category keeps the old value', () {
+      final a = TaskItem(
+        id: 1,
+        name: 'Change air filter',
+        lastCompletedAt: DateTime(2026, 7, 14),
+        category: TaskCategory.home,
+      );
+
+      expect(a.copyWith(name: 'New name').category, TaskCategory.home);
     });
   });
 }
