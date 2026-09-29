@@ -48,8 +48,19 @@ String daysAgoLabel(DateTime date) {
 /// True when the task is past its target interval and should be flagged.
 ///
 /// A task with no interval ([intervalDays] == null) is never overdue.
-bool isOverdue(DateTime lastCompletedAt, {int? intervalDays}) {
-  return intervalDays != null && daysAgo(lastCompletedAt) > intervalDays;
+/// [now] is injectable so tests can pin the "today" reference date.
+bool isOverdue(DateTime lastCompletedAt, {int? intervalDays, DateTime? now}) {
+  return intervalDays != null &&
+      daysAgo(lastCompletedAt, now: now) > intervalDays;
+}
+
+/// True when the task is due exactly today: it has an interval and the
+/// days since completion equal that interval.
+///
+/// [now] is injectable so tests can pin the "today" reference date.
+bool isDueToday(DateTime lastCompletedAt, {int? intervalDays, DateTime? now}) {
+  return intervalDays != null &&
+      daysAgo(lastCompletedAt, now: now) == intervalDays;
 }
 
 /// Status label for a task card.
