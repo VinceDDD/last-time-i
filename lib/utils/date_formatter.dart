@@ -34,8 +34,10 @@ int daysAgo(DateTime date, {DateTime? now}) {
 ///
 /// Future dates (which the app forbids, but we stay defensive) read as
 /// "Today" instead of showing a negative number.
-String daysAgoLabel(DateTime date) {
-  final days = daysAgo(date);
+///
+/// [now] is injectable so tests can pin the "today" reference date.
+String daysAgoLabel(DateTime date, {DateTime? now}) {
+  final days = daysAgo(date, now: now);
   if (days <= 0) {
     return 'Today';
   }
@@ -70,11 +72,15 @@ bool isDueToday(DateTime lastCompletedAt, {int? intervalDays, DateTime? now}) {
 ///  - due exactly today  -> "Due today"
 ///  - past the interval  -> "N days overdue" (or "1 day overdue")
 ///  - not due yet        -> "X days ago"
-String statusLabel(DateTime lastCompletedAt, {int? intervalDays}) {
+String statusLabel(
+  DateTime lastCompletedAt, {
+  int? intervalDays,
+  DateTime? now,
+}) {
   if (intervalDays == null) {
-    return daysAgoLabel(lastCompletedAt);
+    return daysAgoLabel(lastCompletedAt, now: now);
   }
-  final days = daysAgo(lastCompletedAt);
+  final days = daysAgo(lastCompletedAt, now: now);
   if (days == intervalDays) {
     return 'Due today';
   }
@@ -82,5 +88,5 @@ String statusLabel(DateTime lastCompletedAt, {int? intervalDays}) {
     final overdueDays = days - intervalDays;
     return overdueDays == 1 ? '1 day overdue' : '$overdueDays days overdue';
   }
-  return daysAgoLabel(lastCompletedAt);
+  return daysAgoLabel(lastCompletedAt, now: now);
 }

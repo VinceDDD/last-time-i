@@ -9,6 +9,7 @@ import 'package:last_time_i/models/task_category.dart';
 import 'package:last_time_i/models/task_item.dart';
 import 'package:last_time_i/repositories/task_repository.dart';
 import 'package:last_time_i/screens/home_screen.dart';
+import 'package:last_time_i/services/notification_service.dart';
 
 /// A repository whose getAllTasks never completes, so the home screen
 /// stays in its loading state.
@@ -27,6 +28,28 @@ class _ThrowingRepository extends TaskRepository {
   @override
   Future<List<TaskItem>> getAllTasks() async {
     throw Exception('database exploded');
+  }
+}
+
+/// A fake scheduler that records calls instead of talking to the OS.
+class _FakeScheduler implements ReminderScheduler {
+  final scheduledCalls = <List<TaskItem>>[];
+  final cancelledIds = <int>[];
+  bool initialized = false;
+
+  @override
+  Future<void> init() async {
+    initialized = true;
+  }
+
+  @override
+  Future<void> rescheduleAll(List<TaskItem> tasks) async {
+    scheduledCalls.add(List.of(tasks));
+  }
+
+  @override
+  Future<void> cancelTask(int taskId) async {
+    cancelledIds.add(taskId);
   }
 }
 
@@ -300,5 +323,82 @@ void main() {
     final overdueY = tester.getTopLeft(find.text('Overdue one')).dy;
     final notDueY = tester.getTopLeft(find.text('Not due')).dy;
     expect(overdueY, lessThan(notDueY));
+  });
+
+  testWidgets('reschedules notifications when the list loads', (
+    WidgetTester tester,
+  ) async {
+    final repo = TaskRepository(database: testDb);
+    final scheduler = _FakeScheduler();
+    await tester.runAsync(() async {
+      await repo.insertTask(
+        TaskItem(
+          name: 'Change air filter',
+          lastCompletedAt: DateTime(2026, 9, 19),
+          intervalDays: 30, // due 19 October: in the future
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          repository: TaskRepository(database: testDb),
+          scheduler: scheduler,
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    // One reschedule on launch, containing the future-due task.
+    expect(scheduler.scheduledCalls, hasLength(1));
+    expect(scheduler.scheduledCalls.single.single.name, 'Change air filter');
+  });
+
+  testWidgets('reschedules again after marking a task done', (
+    WidgetTester tester,
+  ) async {
+    final repo = TaskRepository(database: testDb);
+    final scheduler = _FakeScheduler();
+    await tester.runAsync(() async {
+      await repo.insertTask(
+        TaskItem(
+          name: 'Clean bathroom',
+          lastCompletedAt: DateTime(2026, 9, 20),
+          intervalDays: 30, // due 20 October: in the future
+        ),
+      );
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: HomeScreen(
+          repository: TaskRepository(database: testDb),
+          scheduler: scheduler,
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+    expect(scheduler.scheduledCalls, hasLength(1));
+
+    // Marking done today rewrites lastCompletedAt, so the notifications
+    // must be re-planned to match.
+    await tester.tap(find.text('MARK DONE TODAY'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(scheduler.scheduledCalls, hasLength(2));
   });
 }
