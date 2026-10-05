@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/task_item.dart';
 import '../repositories/task_repository.dart';
+import '../services/notification_service.dart';
 import '../services/task_service.dart';
 import '../utils/date_formatter.dart';
 import '../utils/task_grouping.dart';
@@ -12,10 +13,13 @@ import 'edit_task_screen.dart';
 /// Home screen: shows all tasks grouped by category, with how long ago
 /// each was completed.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.repository});
+  const HomeScreen({super.key, this.repository, this.scheduler});
 
   /// Allows tests to supply their own repository (and database).
   final TaskRepository? repository;
+
+  /// Swappable notification scheduler; tests inject a fake.
+  final ReminderScheduler? scheduler;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -24,6 +28,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final TaskRepository _repository = widget.repository ?? TaskRepository();
   late final TaskService _service = TaskService(repository: _repository);
+  late final ReminderScheduler _scheduler =
+      widget.scheduler ?? NotificationService();
 
   /// The future that loads the task list; replaced on every reload.
   late Future<List<TaskItem>> _tasksFuture;
@@ -34,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Watch app lifecycle events so the list refreshes when the app
     // returns to the foreground (e.g. after an overnight sleep).
     WidgetsBinding.instance.addObserver(this);
-    _tasksFuture = _repository.getAllTasks();
+    _tasksFuture = _loadAndSchedule();
   }
 
   @override
@@ -54,8 +60,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Re-reads the list from the database and rebuilds.
   void _reload() {
     setState(() {
-      _tasksFuture = _repository.getAllTasks();
+      _tasksFuture = _loadAndSchedule();
     });
+  }
+
+  /// Loads the list, then re-schedules due-date notifications to match.
+  ///
+  /// Every change (add, edit, mark done, delete) flows back through this
+  /// method, so the scheduled notifications always mirror the database.
+  Future<List<TaskItem>> _loadAndSchedule() async {
+    final tasks = await _repository.getAllTasks();
+    try {
+      await _scheduler.rescheduleAll(tasks);
+    } catch (_) {
+      // Notifications are best-effort: a permission problem must not
+      // break the list itself.
+    }
+    return tasks;
   }
 
   /// Opens the add screen, then refreshes the list on return.
